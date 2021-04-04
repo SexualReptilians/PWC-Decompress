@@ -1,0 +1,5 @@
+*.d
+*.o
+*.uasset
+*.pwc
+*.zlib
