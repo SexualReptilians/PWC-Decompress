@@ -5,7 +5,7 @@ DEP = $(OBJ:.o=.d)
 
 INCLUDE = -Iinclude
 LDFLAGS = 
-CFLAGS = -MMD -ggdb $(INCLUDE)
+CFLAGS = -MMD $(INCLUDE)
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
