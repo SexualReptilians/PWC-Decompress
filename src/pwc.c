@@ -44,12 +44,12 @@ int main(int argc, char *argv[]) {
 
     // Verbose
     if (print_verbose) {
-        for (int i=0;i<mypak->size_decompressed;i++) {
-            printf("%02X ", outbuf[i]);
-            if (!((i+1)%8)) printf(" ");
-            if (!((i+1)%16)) printf("\n");
-        }
-        printf("\n%u\n", size_read);
+        // for (int i=0;i<mypak->size_decompressed;i++) {
+        //     printf("%02X ", outbuf[i]);
+        //     if (!((i+1)%8)) printf(" ");
+        //     if (!((i+1)%16)) printf("\n");
+        // }
+        printf("\nRead: %u\n", size_read);
     }
 
     // Decompression size differs from specified in header
@@ -109,6 +109,10 @@ struct pak_file *parsePakFile(FILE *fp) {
     fread(&newfile->size_decompressed, 8, 1, fp);
     fseek(fp, 4, SEEK_CUR);
     fread(newfile->sha1, 1, 20, fp);
+    fseek(fp, 4, SEEK_CUR);
+    fread(&newfile->additional_size, 8, 1, fp);
+
+    newfile->size_compressed -= newfile->additional_size - PAK_HEADER_SIZE;
 
     // Create buffer for the file data
     newfile->data = malloc(newfile->size_compressed);
@@ -117,8 +121,9 @@ struct pak_file *parsePakFile(FILE *fp) {
         return NULL;
     }
 
+    fseek(fp, newfile->additional_size, SEEK_SET);
+    if (print_verbose) printf("PWC data starts at: %llu\n", ftell(fp));
     // Put raw data block into the data buffer
-    fseek(fp, 25, SEEK_CUR);
     size_t count_read = fread(newfile->data, 1, newfile->size_compressed, fp);
 
     // Something went wrong reading. Stop
@@ -137,12 +142,12 @@ struct pak_file *parsePakFile(FILE *fp) {
             printf("%02X ", newfile->sha1[i]);
         }
         printf("\n");
-        for (int i = 0; i < newfile->size_compressed; i++) {
-            printf("%02X ", newfile->data[i]);
-            if (!((i+1) % 8)) printf(" ");
-            if (!((i+1) % 16)) printf("\n");
-        }
-        printf("\n");
+        // for (int i = 0; i < newfile->size_compressed; i++) {
+        //     printf("%02X ", newfile->data[i]);
+        //     if (!((i+1) % 8)) printf(" ");
+        //     if (!((i+1) % 16)) printf("\n");
+        // }
+        // printf("\n");
     }
 
     return newfile;
