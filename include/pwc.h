@@ -28,7 +28,7 @@ uint8_t print_verbose = 0;
 struct pak_file {
     uint64_t size_compressed;
     uint64_t size_decompressed;
-    uint64_t additional_size;
+    uint64_t data_offset;
     uint8_t sha1[20];
     uint8_t *data;
 };

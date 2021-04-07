@@ -110,9 +110,7 @@ struct pak_file *parsePakFile(FILE *fp) {
     fseek(fp, 4, SEEK_CUR);
     fread(newfile->sha1, 1, 20, fp);
     fseek(fp, 4, SEEK_CUR);
-    fread(&newfile->additional_size, 8, 1, fp);
-
-    newfile->size_compressed -= newfile->additional_size - PAK_HEADER_SIZE;
+    fread(&newfile->data_offset, 8, 1, fp);
 
     // Create buffer for the file data
     newfile->data = malloc(newfile->size_compressed);
@@ -121,7 +119,7 @@ struct pak_file *parsePakFile(FILE *fp) {
         return NULL;
     }
 
-    fseek(fp, newfile->additional_size, SEEK_SET);
+    fseek(fp, newfile->data_offset, SEEK_SET);
     if (print_verbose) printf("PWC data starts at: %llu\n", ftell(fp));
     // Put raw data block into the data buffer
     size_t count_read = fread(newfile->data, 1, newfile->size_compressed, fp);
