@@ -245,7 +245,7 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
 
         // Repeat backtracked data block while moving
         if (psize > backtrack) {
-            for (uint8_t i = 0; i < psize; i++) {
+            for (uint64_t i = 0; i < psize; i++) {
                 out[oindex] = out[oindex-backtrack];
                 oindex++;
             }
