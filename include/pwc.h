@@ -15,13 +15,16 @@
 // 72 - Zero
 // 73-73+datalength - Raw data
 
-#define PAK_HEADER_SIZE 73
+
+#define PRINT_VERBOSE 1
+#define ALLOW_NOMAGIC 1
+
+
+#define PAK_HEADER_SIZE 0x49
 #define PWC_XOR_KEY 0xCC
 
 const uint8_t pwc_magic1[3] = {0xCC, 0xCD, 0xCC};
 const uint8_t pwc_magic2[4] = {0x0D, 0x4F, 0xE6, 0x52};
-
-const uint8_t print_verbose = 1;
 
 struct pak_file {
     uint64_t size_compressed;
