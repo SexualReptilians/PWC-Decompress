@@ -15,8 +15,6 @@
 // 72 - Zero
 // 73-73+datalength - Raw data
 
-
-#define PRINT_VERBOSE 1
 #define ALLOW_NOMAGIC 1
 
 
@@ -25,6 +23,7 @@
 
 const uint8_t pwc_magic1[3] = {0xCC, 0xCD, 0xCC};
 const uint8_t pwc_magic2[4] = {0x0D, 0x4F, 0xE6, 0x52};
+uint8_t print_verbose = 0;
 
 struct pak_file {
     uint64_t size_compressed;

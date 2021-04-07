@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     size_t size_read = decompressPWC(outbuf, mypak->data, mypak->size_compressed);
 
     // Verbose
-    if (PRINT_VERBOSE) {
+    if (print_verbose) {
         for (int i=0;i<mypak->size_decompressed;i++) {
             printf("%02X ", outbuf[i]);
             if (!((i+1)%8)) printf(" ");
@@ -129,7 +129,7 @@ struct pak_file *parsePakFile(FILE *fp) {
     }
 
     // Verbose
-    if (PRINT_VERBOSE) {
+    if (print_verbose) {
         printf("Packed: %llu\n", newfile->size_compressed);
         printf("Unpacked: %llu\n", newfile->size_decompressed);
         printf("SHA-1: ");
@@ -180,7 +180,6 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
     uint64_t oindex = 0;
     uint16_t skip;
     uint16_t psize;
-    uint8_t ptemp;
     uint8_t pext = 0;
     uint16_t backtrack;
 
@@ -190,11 +189,11 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
 
         // Special case, skip has additional byte
         if (skip == 0x0F) {
-            do {
+            while (1) {
                 index++;
-                ptemp = data[index];
-                skip += ptemp;
-            } while (ptemp == 0xFF);
+                skip += data[index];
+                if (data[index] != 0xFF) break;
+            }
         }
 
         // Special case, next pointer will have additional byte
@@ -214,11 +213,11 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
         // End condition
         if (index >= size_c) {
             if (index == size_c) {
-                if (PRINT_VERBOSE) printf("Reached end of data block!\n");
+                if (print_verbose) printf("Reached end of data block!\n");
                 break;
             }
             else {
-                if (PRINT_VERBOSE) printf("Error: Offset exceeded input buffer!\n");
+                if (print_verbose) printf("Error: Offset exceeded input buffer!\n");
                 return oindex;
             }
         }
@@ -229,17 +228,18 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
 
         // Backtrack underrun
         if (backtrack > oindex) {
-            if (PRINT_VERBOSE) printf("Error: Backtrack underran current output buffer lenght!\n");
+            if (print_verbose) printf("Error: Backtrack underran current output buffer lenght!\n");
             return oindex;
         }
 
         // Extended pointer flag was set, increment indexes
         if (pext) {
-            do {
-                ptemp = data[index];
-                psize += ptemp;
+            while(1) {
+                psize += data[index];
+                uint8_t odata = data[index];
                 index++;
-            } while (ptemp == 0xFF);
+                if (odata != 0xFF) break;
+            }
             pext = 0;
         }
 
