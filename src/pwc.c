@@ -180,6 +180,7 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
     uint64_t oindex = 0;
     uint16_t skip;
     uint16_t psize;
+    uint8_t ptemp;
     uint8_t pext = 0;
     uint16_t backtrack;
 
@@ -189,8 +190,11 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
 
         // Special case, skip has additional byte
         if (skip == 0x0F) {
-            index++;
-            skip += data[index];
+            do {
+                index++;
+                ptemp = data[index];
+                skip += ptemp;
+            } while (ptemp == 0xFF);
         }
 
         // Special case, next pointer will have additional byte
@@ -231,8 +235,11 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
 
         // Extended pointer flag was set, increment indexes
         if (pext) {
-            psize += data[index];
-            index++;
+            do {
+                ptemp = data[index];
+                psize += ptemp;
+                index++;
+            } while (ptemp == 0xFF);
             pext = 0;
         }
 
