@@ -36,10 +36,11 @@ int test() {
         char *qe = strchr(qs,'"');
         if (qe == NULL) continue;       // invalid entry what
 
-        if (qe-qs > 255) {
+        if (qe-qs > sizeof(path)/sizeof(char)) {
             printf("WARNING: file name is too long for input: %s\n", buf);
             continue;
         }
+
         strncat(path, qs, qe-qs);
         pbuf = qe;                      // start on the second quote for the next search
 
