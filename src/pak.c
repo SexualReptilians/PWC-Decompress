@@ -19,63 +19,56 @@ int test() {
      */
 
     // Get from stdin (piped from UnrealPak)
-    char buf[512];
+    char buf[4000];
     while (fgets(buf, sizeof(buf), stdin) != NULL) {
-        char path[255] = "\0";  // strncat expects an initialized string
-        char sha1[41] = "\0";
-        char compr[9] = "\0";
+        char path[3000] = {0};
+        char sha1[41] = {0};
+        char compr[9] = {0};
         uint64_t off = 0;
         uint64_t size = 0;
 
         char *pbuf = buf;
 
-        char *qs = strchr(pbuf, '"');
-        if (qs == NULL) continue;       // invalid entry
-        qs++;
+        char *path_start = strchr(pbuf, '"');
+        if (path_start == NULL) continue;
 
-        char *qe = strchr(qs,'"');
-        if (qe == NULL) continue;       // invalid entry what
+        char *path_end = strchr(path_start+1, '"');
+        if (path_end == NULL) continue;
 
-        if (qe-qs > sizeof(path)/sizeof(char)) {
+        size_t path_len = ((path_end-path_start)/sizeof(char))-1;
+        // always leave space for zero terminator when dealing with strings
+        if (path_len > (sizeof(path)/sizeof(char))-1) {
             printf("WARNING: file name is too long for input: %s\n", buf);
             continue;
         }
 
-        strncat(path, qs, qe-qs);
-        pbuf = qe;                      // start on the second quote for the next search
+        memcpy(path, path_start+1, path_len);
+        // start on the second quote for the next search
+        pbuf = path_end+1;
 
-        // Next number: offset
-        while(*pbuf) {
-            if (isdigit(*pbuf)) {
-                off = strtoull(pbuf, &pbuf, 10);
-                break;
-            }
-            else pbuf++;
-        }
-        if (off == 0) continue;     // waht
+        char *poff = strstr(buf, "offset:");
+        if (poff == NULL) continue;
+        poff += sizeof(char)*8;
+        sscanf(poff, "%llu", &off);
 
-        // Next number: size
-        while(*pbuf) {
-            if (isdigit(*pbuf)) {
-                size = strtoull(pbuf, &pbuf, 10);
-                break;
-            }
-            else pbuf++;
-        }
-        if (size == 0) continue;     // uhh
+        char *soff = strstr(buf, "size:");
+        if (soff == NULL) continue;
+        soff += sizeof(char)*6;
+        sscanf(soff, "%llu", &size);
 
-        pbuf = strchr(pbuf, ':');
-        pbuf += 2;
-        strncat(sha1, pbuf, 40);
+        char *shaoff = strstr(buf, "sha1:");
+        if (shaoff == NULL) continue;
+        shaoff += sizeof(char)*6;
 
-        pbuf = strchr(pbuf, ':');
-        pbuf += 2;
-        qe = strchr(pbuf, '.');     // lol variable reuse
-        if (qe-pbuf > 8) {
-            printf("WARNING: compression format name is too long: %s\n", buf);
-            continue;
-        }
-        strncat(compr, pbuf, qe-pbuf);
+        memcpy(sha1, shaoff, sizeof(char)*40);
+        
+        char *compoff = strstr(buf, "compression:");
+        if (compoff == NULL) continue;
+        compoff += sizeof(char)*13;
+
+        size_t compsize = strlen(compoff);
+        compoff[compsize-2] = '\0';
+        sscanf(compoff, "%s", compr);
 
         printf("Got [%s] with offset %08llX, size %08llX, sha1 [%s] compression [%s]\n", path, off, size, sha1, compr);
     }
