@@ -20,7 +20,7 @@ int test() {
 
     // Get from stdin (piped from UnrealPak)
     char buf[512];
-    while (fgets(buf, sizeof(buf), stdin)) {
+    while (fgets(buf, sizeof(buf), stdin) != NULL) {
         char path[255] = "\0";  // strncat expects an initialized string
         char sha1[41] = "\0";
         char compr[9] = "\0";
