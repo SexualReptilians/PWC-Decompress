@@ -19,56 +19,61 @@ int test() {
      */
 
     // Get from stdin (piped from UnrealPak)
+    size_t charsize = sizeof(char);
     char buf[4000];
-    while (fgets(buf, sizeof(buf), stdin) != NULL) {
+    while (fgets(buf, sizeof(buf) / charsize, stdin) != NULL) {
+        // Full array zero initialize
         char path[3000] = {0};
         char sha1[41] = {0};
-        char compr[9] = {0};
-        uint64_t off = 0;
-        uint64_t size = 0;
+        char compr[100] = {0};
+        size_t off = 0;
+        size_t size = 0;
 
-        char *pbuf = buf;
-
-        char *path_start = strchr(pbuf, '"');
+        // Get first quote
+        char *path_start = strchr(buf, '"');
         if (path_start == NULL) continue;
+        path_start += charsize;
 
-        char *path_end = strchr(path_start+1, '"');
+        // Get second quote (starting first+1)
+        char *path_end = strchr(path_start, '"');
         if (path_end == NULL) continue;
+        path_end -= charsize;
 
-        size_t path_len = ((path_end-path_start)/sizeof(char))-1;
+        // Length minus the end quote
+        size_t path_len = ((path_end-path_start) / charsize) + charsize;
         // always leave space for zero terminator when dealing with strings
-        if (path_len > (sizeof(path)/sizeof(char))-1) {
+        if (path_len > (sizeof(path) / charsize) - charsize) {
             printf("WARNING: file name is too long for input: %s\n", buf);
             continue;
         }
 
-        memcpy(path, path_start+1, path_len);
-        // start on the second quote for the next search
-        pbuf = path_end+1;
+        // Copy substring (skip first quote)
+        memcpy(path, path_start, path_len);
 
-        char *poff = strstr(buf, "offset:");
-        if (poff == NULL) continue;
-        poff += sizeof(char)*8;
-        sscanf(poff, "%llu", &off);
+        char *match_offset;
 
-        char *soff = strstr(buf, "size:");
-        if (soff == NULL) continue;
-        soff += sizeof(char)*6;
-        sscanf(soff, "%llu", &size);
+        match_offset = strstr(buf, "offset:");
+        if (match_offset == NULL) continue;
+        match_offset += charsize * 8;
+        sscanf(match_offset, "%llu", &off);
 
-        char *shaoff = strstr(buf, "sha1:");
-        if (shaoff == NULL) continue;
-        shaoff += sizeof(char)*6;
+        match_offset = strstr(buf, "size:");
+        if (match_offset == NULL) continue;
+        match_offset += charsize * 6;
+        sscanf(match_offset, "%llu", &size);
 
-        memcpy(sha1, shaoff, sizeof(char)*40);
+        match_offset = strstr(buf, "sha1:");
+        if (match_offset == NULL) continue;
+        match_offset += charsize * 6;
+        memcpy(sha1, match_offset, charsize * 40);
         
-        char *compoff = strstr(buf, "compression:");
-        if (compoff == NULL) continue;
-        compoff += sizeof(char)*13;
+        match_offset = strstr(buf, "compression:");
+        if (match_offset == NULL) continue;
+        match_offset += charsize * 13;
 
-        size_t compsize = strlen(compoff);
-        compoff[compsize-2] = '\0';
-        sscanf(compoff, "%s", compr);
+        size_t compsize = strlen(match_offset);
+        match_offset[compsize - (2 * charsize)] = '\0';
+        sscanf(match_offset, "%s", compr);
 
         printf("Got [%s] with offset %08llX, size %08llX, sha1 [%s] compression [%s]\n", path, off, size, sha1, compr);
     }
