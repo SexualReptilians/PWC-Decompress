@@ -5,6 +5,6 @@
 #ifndef __PAK_H
 #define __PAK_H
 
-void test();
+int test();
 
 #endif //__PAK_H

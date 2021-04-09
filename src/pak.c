@@ -9,7 +9,7 @@
 #include <pak.h>
 #include <ctype.h>
 
-void test() {
+int test() {
     // line format
     // LogPakFile: Display: "Century/Content/Characters/Customization/Flags/Flag001/Materials/Axe/MI_Flag001_Axe_F.uasset" offset: 27609088, size: 1578 bytes, sha1: C90BAA3D00A39B72BA583214790D4A6676F9CCCF, compression: PWC.
 
@@ -78,5 +78,6 @@ void test() {
 
         printf("Got [%s] with offset %08llX, size %08llX, sha1 [%s] compression [%s]\n", path, off, size, sha1, compr);
     }
+    return 0;
 }
 
