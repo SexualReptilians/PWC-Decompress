@@ -55,12 +55,12 @@ int test() {
         match_offset = strstr(buf, "offset:");
         if (match_offset == NULL) continue;
         match_offset += charsize * 8;
-        sscanf(match_offset, "%llu", &off);
+        if (!sscanf(match_offset, "%llu", &off)) continue;
 
         match_offset = strstr(buf, "size:");
         if (match_offset == NULL) continue;
         match_offset += charsize * 6;
-        sscanf(match_offset, "%llu", &size);
+        if(!sscanf(match_offset, "%llu", &size)) continue;
 
         match_offset = strstr(buf, "sha1:");
         if (match_offset == NULL) continue;
@@ -73,10 +73,9 @@ int test() {
 
         size_t compsize = strlen(match_offset);
         match_offset[compsize - (2 * charsize)] = '\0';
-        sscanf(match_offset, "%s", compr);
+        if(!sscanf(match_offset, "%s", compr)) continue;
 
         printf("Got [%s] with offset %08llX, size %08llX, sha1 [%s] compression [%s]\n", path, off, size, sha1, compr);
     }
     return 0;
 }
-
