@@ -5,7 +5,7 @@ DEP = $(OBJ:.o=.d)
 
 INCLUDE = -Iinclude
 LDFLAGS = 
-CFLAGS = -MMD $(INCLUDE)
+CFLAGS = -MMD -m64 -D_FILE_OFFSET_BITS=64 $(INCLUDE)
 
 .PHONY: all
 all: $(TARGET)

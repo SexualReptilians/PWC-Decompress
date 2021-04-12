@@ -1,10 +1,108 @@
+//
+// Created by Nexrem and Lyrthras.
+//
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pwc.h>
 
-int main(int argc, char *argv[]) {
+#include <pwc.h>
+#include <util.h>
+
+size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
+    uint8_t *data = in_buffer;
+    uint8_t *out = out_buffer;
+
+    // XOR the first 16 bytes of the stream
+    for (uint64_t i = 0; i < 16; i++) {
+        data[i] ^= PWC_XOR_KEY;
+    }
+
+    size_t index = 0;   // in index
+    size_t oindex = 0;  // out index
+    uint16_t skip;
+    uint16_t psize;
+    uint8_t pext = 0;
+    uint16_t backtrack;
+
+    while (index < size_c) {
+        skip = (data[index]>>4) & 0x0F;     // HI NIB
+        psize = data[index] & 0x0F;         // LO NIB
+
+        // Special case, skip has additional byte(s)
+        if (skip == 0x0F) {
+            while (1) {
+                index++;
+                skip += data[index];
+                if (data[index] != 0xFF) break;
+            }
+        }
+
+        // Special case, next pointer will have additional byte
+        if (psize == 0x0F) {
+            pext = 1;
+        }
+
+        // Size base always 4
+        psize += 4;
+        index++;
+
+        // Copy skip bytes to output buffer
+        memcpy(out+oindex, data+index, skip);
+        index += skip;
+        oindex += skip;
+
+        // End condition
+        if (index >= size_c) {
+            if (index == size_c) {
+                if (print_verbose) printf("Reached end of data block!\n");
+            }
+            else printf("Error: Offset exceeded input buffer!\n");
+            break;  // main while
+        }
+
+        // Next 2 bytes are our backtrack number
+        memcpy(&backtrack, data+index, 2);
+        index += 2;
+
+        // Backtrack underrun
+        if (backtrack > oindex) {
+            printf("Error: Backtrack underran current output buffer length!\n");
+            break;  // main while
+        }
+
+        // Extended pointer flag was set, accumulate psize
+        if (pext) {
+            while(1) {
+                psize += data[index];
+                uint8_t odata = data[index];
+                index++;
+                if (odata != 0xFF) break;
+            }
+            pext = 0;
+        }
+
+        // Repeat backtracked data block while moving
+        if (psize > backtrack) {
+            for (uint64_t i = 0; i < psize; i++) {
+                out[oindex] = out[oindex-backtrack];
+                oindex++;
+            }
+        }
+            // Repeat backtracked data block statically
+        else {
+            memcpy(out+oindex, out+oindex-backtrack, psize);
+            oindex += psize;
+        }
+    }
+
+    return oindex;
+}
+
+//////////////////
+
+int mainold(int argc, char *argv[]) {
     // Usage
     if (argc != 3) {
         printf("Syntax: %s <input> <output>\n", argv[0]);
@@ -22,7 +120,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Serialize PakFile
-    struct pak_file *mypak = parsePakFile(fp_input);
+    struct pak_record *mypak = parsePakRecord(fp_input);
     fclose(fp_input);
 
     // Not valid PAK
@@ -53,6 +151,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Decompression size differs from specified in header
+
     if (size_read != mypak->size_decompressed) {
         printf("PWC Decompression failure!\n");
         free(outbuf);
@@ -79,7 +178,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-struct pak_file *parsePakFile(FILE *fp) {
+struct pak_record *parsePakRecord(FILE *fp) {
     // go to EOF and get file size
     fseek(fp, 0, SEEK_END);
     uint64_t size = ftell(fp);
@@ -98,8 +197,8 @@ struct pak_file *parsePakFile(FILE *fp) {
     }
 
     // Pak meta into structure
-    struct pak_file *newfile;
-    newfile = malloc(sizeof(struct pak_file));
+    struct pak_record *newfile;
+    newfile = malloc(sizeof(struct pak_record));
     if (newfile == NULL) {
         return NULL;
     }
@@ -120,7 +219,7 @@ struct pak_file *parsePakFile(FILE *fp) {
     }
 
     fseek(fp, newfile->data_offset, SEEK_SET);
-    if (print_verbose) printf("PWC data starts at: %llu\n", ftell(fp));
+    if (print_verbose) printf("PWC data starts at: %llu\n", ftello(fp));
     // Put raw data block into the data buffer
     size_t count_read = fread(newfile->data, 1, newfile->size_compressed, fp);
 
@@ -152,7 +251,7 @@ struct pak_file *parsePakFile(FILE *fp) {
 }
 
 // Free up pak_file structure
-void cleanPakFile(struct pak_file *pf) {
+void cleanPakFile(struct pak_record *pf) {
     if (pf == NULL) return;
 
     if (pf->data != NULL) {
@@ -162,103 +261,3 @@ void cleanPakFile(struct pak_file *pf) {
     free(pf);
 }
 
-size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
-    uint8_t *data = in_buffer;
-    uint8_t *out = out_buffer;
-
-    // Check if file magic exists
-    if (memcmp(data+1, &pwc_magic1, sizeof(pwc_magic1))) {
-        if (memcmp(data+1, &pwc_magic2, sizeof(pwc_magic2))) {
-            printf("No magic found\n");
-            if (!ALLOW_NOMAGIC) return 0;
-        }
-    }
-
-    // XOR the first 16 bytes of the stream
-    for (uint64_t i = 0; i < 16; i++) {
-        data[i] ^= PWC_XOR_KEY;
-    }
-
-    uint64_t index = 0;
-    uint64_t oindex = 0;
-    uint16_t skip;
-    uint16_t psize;
-    uint8_t pext = 0;
-    uint16_t backtrack;
-
-    while (index < size_c) {
-        skip = (data[index]>>4) & 0x0F; // HI NIB
-        psize = data[index] & 0x0F;     // LO NIB
-
-        // Special case, skip has additional byte
-        if (skip == 0x0F) {
-            while (1) {
-                index++;
-                skip += data[index];
-                if (data[index] != 0xFF) break;
-            }
-        }
-
-        // Special case, next pointer will have additional byte
-        if (psize == 0x0F) {
-            pext = 1;
-        }
-
-        // Size base always 4
-        psize += 4;
-        index++;
-
-        // Copy skip bytes to output buffer
-        memcpy(out+oindex, data+index, skip);
-        index += skip;
-        oindex += skip;
-
-        // End condition
-        if (index >= size_c) {
-            if (index == size_c) {
-                if (print_verbose) printf("Reached end of data block!\n");
-                break;
-            }
-            else {
-                if (print_verbose) printf("Error: Offset exceeded input buffer!\n");
-                return oindex;
-            }
-        }
-
-        // Next 2 bytes are our backtrack number
-        memcpy(&backtrack, data+index, 2);
-        index += 2;
-
-        // Backtrack underrun
-        if (backtrack > oindex) {
-            if (print_verbose) printf("Error: Backtrack underran current output buffer lenght!\n");
-            return oindex;
-        }
-
-        // Extended pointer flag was set, increment indexes
-        if (pext) {
-            while(1) {
-                psize += data[index];
-                uint8_t odata = data[index];
-                index++;
-                if (odata != 0xFF) break;
-            }
-            pext = 0;
-        }
-
-        // Repeat backtracked data block while moving
-        if (psize > backtrack) {
-            for (uint64_t i = 0; i < psize; i++) {
-                out[oindex] = out[oindex-backtrack];
-                oindex++;
-            }
-        }
-        // Repeat backtracked data block statically
-        else {
-            memcpy(out+oindex, out+oindex-backtrack, psize);
-            oindex += psize;
-        }
-    }
-
-    return oindex;
-}
