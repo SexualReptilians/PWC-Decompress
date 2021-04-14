@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
     time(&s_end);
 
     fclose(fp_pak);
-    printf("Done processing files in %.4fs, total %d. (%d succeeded, %d ignored, %d errored)",
+    printf("Done processing files in %.4fs, total %d. (%d succeeded, %d ignored, %d errored)\n",
            (double)(s_end - s_start), s_total, s_success, s_ignored, s_error);
 
     return EXIT_SUCCESS;

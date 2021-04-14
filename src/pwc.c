@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <string.h>
 
 #include <pwc.h>
 
 size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
     uint8_t *data = in_buffer;
     uint8_t *out = out_buffer;
+
+    if (size_c < 17) return 0;
 
     // XOR the first 16 bytes of the stream
     for (uint64_t i = 0; i < 16; i++) {
@@ -15,10 +17,10 @@ size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
 
     size_t index = 0;
     size_t oindex = 0;
-    uint16_t skip;
-    uint16_t psize;
+    uint64_t skip;
+    uint64_t psize;
     uint8_t pext = 0;
-    uint16_t backtrack;
+    uint64_t backtrack = 0;
 
     while (index < size_c) {
         skip = (data[index]>>4) & 0x0F;
