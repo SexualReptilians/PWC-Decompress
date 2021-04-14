@@ -1,6 +1,8 @@
 #ifndef __PAK_H
 #define __PAK_H
 
+#define PAK_HEADER_SIZE 0x49
+
 // From UnrealPak output
 struct pak_record_info {
     char path[512];

@@ -3,18 +3,18 @@
 #error System is not x86_64
 #endif
 
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #ifdef _WIN32
 #include <io.h>
 #elif __linux__
 #include <unistd.h>
 #include <sys/types.h>
 #endif
-
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 #include <pak.h>
 #include <pwc.h>
@@ -42,8 +42,9 @@ int main(int argc, char *argv[]) {
     }
 
     // stats for nerds
-    int stotal = 0, ssuccess = 0, signored = 0, serror = 0, sinvalid = 0;
-    clock_t start = clock();
+    int s_total = 0, s_success = 0, s_ignored = 0, s_error = 0, s_invalid = 0;
+    time_t s_start, s_end;
+    time(&s_start);
 
     size_t charsize = sizeof(char);
     char buf[1024];
@@ -110,47 +111,47 @@ int main(int argc, char *argv[]) {
         switch (processRecord(fp_pak, rec)) {
             case PAK_SUCCESS:
                 if(print_verbose) printf("Done parsing file at %08llX!\n", rec.offset);
-                ssuccess++;
+                s_success++;
                 break;
             case PAK_OUTFILE_ERR:
                 printf("Error opening output file [%s]! Have you ran UnrealPak -Extract first?\n", rec.path);
                 printf("Or make sure output directory is present before running this.\n");
-                serror++;
+                s_error++;
                 break;
             case PAK_UNSUPPORTED_COMPRESSION:
-                signored++;
+                s_ignored++;
                 break;
             case PAK_EOF:
                 printf("Error: Reached EOF before obtaining required amount of data...\n");
                 printf("       @ %08llX [%s]\n", rec.offset, rec.path);
-                serror++;
+                s_error++;
                 break;
             case PAK_NO_MEMORY:
                 printf("Error: Download more RAM.\n");
                 printf("       @ %08llX [%s]\n", rec.offset, rec.path);
-                serror++;
+                s_error++;
                 break;
             case PAK_INVALID:
                 printf("Error: Invalid pak block.\n");
                 printf("       @ %08llX [%s]\n", rec.offset, rec.path);
-                sinvalid++;
-                if (sinvalid > 10) {
+                s_invalid++;
+                if (s_invalid > 10) {
                     printf("FATAL: Wrong PAK file probably. Quitting.\n");
                 }
                 return EXIT_FAILURE;
             case PAK_WTF:
                 printf("Error: wtf\n");
                 printf("       @ %08llX [%s]\n", rec.offset, rec.path);
-                serror++;
+                s_error++;
         }
 
-        stotal++;
+        s_total++;
     }
-    clock_t end = clock();
+    time(&s_end);
 
     fclose(fp_pak);
     printf("Done processing files in %.4fs, total %d. (%d succeeded, %d ignored, %d errored)",
-           (double)(end - start) / CLOCKS_PER_SEC, stotal, ssuccess, signored, serror);
+           (double)(s_end - s_start), s_total, s_success, s_ignored, s_error);
 
     return EXIT_SUCCESS;
 }
