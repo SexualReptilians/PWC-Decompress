@@ -1,7 +1,3 @@
-//
-// Created by Lyr on 4/9/2021.
-//
-
 #ifndef __PAK_H
 #define __PAK_H
 
@@ -9,8 +5,8 @@
 struct pak_record_info {
     char path[512];
     char sha1[41];
-    char compr[64];
-    size_t off;
+    char compression[64];
+    size_t offset;
     size_t size;
 };
 
@@ -29,10 +25,10 @@ struct pak_record_info {
 
 // Blocks of data within the pak
 struct pak_metadata {
-    uint64_t size_compr;
-    uint64_t size_decompr;
+    uint64_t size_compressed;
+    uint64_t size_decompressed;
     uint32_t block_count;
-    uint32_t block_unp_size;
+    uint32_t block_unpacked;
 };
 
 // Pak processing err codes
@@ -46,8 +42,6 @@ enum PAK_ERROR {
     PAK_WTF,
 };
 
-
-int test();
 enum PAK_ERROR processRecord(FILE *fp_pak, struct pak_record_info rec);
 
-#endif //__PAK_H
+#endif // __PAK_H
