@@ -3,8 +3,10 @@
 
 #include <stdint.h>
 
-#define PAK_HEADER_SIZE 0x49    // not constant
+#define PAK_HEADER_SIZE 0x49
 #define PWC_XOR_KEY 0xCC
+
+static const uint8_t print_verbose = 0;
 
 struct pak_record {
     uint64_t size_compressed;

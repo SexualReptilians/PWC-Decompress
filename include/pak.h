@@ -29,14 +29,9 @@ struct pak_record_info {
 
 // Blocks of data within the pak
 struct pak_metadata {
-    //uint64_t zero;
     uint64_t size_compr;
     uint64_t size_decompr;
-    //uint32_t flag;
-    //uint8_t sha1[20];
     uint32_t block_count;
-    // 16*block_count block_locs
-    // uint8_t zero_again;
     uint32_t block_unp_size;
 };
 

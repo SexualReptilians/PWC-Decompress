@@ -8,7 +8,6 @@
 #include <string.h>
 
 #include <pwc.h>
-#include <util.h>
 
 size_t decompressPWC(uint8_t *out_buffer, uint8_t *in_buffer, uint64_t size_c) {
     uint8_t *data = in_buffer;

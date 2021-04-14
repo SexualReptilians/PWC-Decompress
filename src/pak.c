@@ -1,33 +1,25 @@
-//
-// 4/9/2021.
-// Created by Nexrem and Lyrthras.
-//
+#if defined(__amd64) || defined(_M_AMD64)
+#else
+#error System is not x86_64
+#endif
+
+#if defined(_WIN32)
+#include <io.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#endif
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <io.h>
 #include <time.h>
 
 #include <pak.h>
 #include <pwc.h>
-#include <util.h>
 
-// line format
-// LogPakFile: Display: "Century/Content/Characters/Customization/Flags/Flag001/Materials/Axe/MI_Flag001_Axe_F.uasset" offset: 27609088, size: 1578 bytes, sha1: C90BAA3D00A39B72BA583214790D4A6676F9CCCF, compression: PWC.
-// LogPakFile: Display: "Engine/Plugins/Developer/AnimationSharing/Content/AnimSharingBase.uexp" offset: 4312447919, size: 24257 bytes, sha1: 23189645A4F8D2BEB35A004F71929A66A7A78BFE, compression: PWC.
-// LogPakFile: Display: "Century/AssetRegistry.bin" offset: 176128, size: 1049592 bytes, sha1: A4DD7F6B2D83307EF1B72E5CED91229F715CF77C, compression: PWC.
 int main(int argc, char *argv[]) {
-    if (is_bigendian()) {
-        printf(
-            "ERROR: pak files are Little-Endian but your system is Big-Endian.\n"
-            "       Please use a BE version of this program, \n"
-            "       or contact Nexrem or Lyrthras about this.\n"
-        );
-        return EXIT_FAILURE;
-    };
 
     // Usage
     if (argc < 3) {
@@ -162,7 +154,7 @@ enum PAK_ERROR processRecord(FILE *fp_pak, struct pak_record_info rec) {
 
     struct pak_metadata meta;
     size_t count_read;
-    _off64_t mark;
+    off64_t mark;
 
     fseeko(fp_pak, rec.off, SEEK_SET);    // NOTE: Non-ISO compliant, alternative can be multiple fseek calls? (which is unsafe?)
 
